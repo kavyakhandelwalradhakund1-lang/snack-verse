@@ -1,0 +1,869 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>SnackVerse</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Figtree:wght@400;600;700;800&display=swap">
+<style>
+/* Layout: black street-stall header, striped awning, hero with a yellow "stall" disc,
+   then a two-card menu (the chaat card expands in place), then one "Your Order" slip. */
+:root {
+  --bg: #FFF6E8;
+  --surface: #FFFFFF;
+  --ink: #1A1410;
+  --muted: #6A5A4C;
+  --line: #EAD8BF;
+  --edge: #141010;
+  --art-bg: #FFE0B8;
+  --orange: #FF6A13;
+  --red: #E0301E;
+  --yellow: #FFC619;
+  --price: #C42813;
+  --on-accent: #1A1008;
+  --bar: #141010;
+  --bar-ink: #FFF3E3;
+  --hero-bg: linear-gradient(135deg, #141010 0%, #3B0F08 48%, #B3230F 100%);
+  --hero-ink: #FFF3E3;
+  --wa: #118A48;
+  --warn-bg: #FFE9A8;
+  --warn-ink: #4A3300;
+  --err: #B3170A;
+  --focus: #0B5FFF;
+  --font-display: "Bungee", "Impact", "Arial Black", sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141010; --surface: #211A17; --ink: #FFF3E3; --muted: #C2AE9B; --line: #3B2E27;
+    --edge: #FFC619; --art-bg: #3A261B; --price: #FF7B66; --bar: #0B0807;
+    --warn-bg: #4A3A0A; --warn-ink: #FFE9A8; --err: #FF8A7A; --focus: #8DB8FF;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141010; --surface: #211A17; --ink: #FFF3E3; --muted: #C2AE9B; --line: #3B2E27;
+  --edge: #FFC619; --art-bg: #3A261B; --price: #FF7B66; --bar: #0B0807;
+  --warn-bg: #4A3A0A; --warn-ink: #FFE9A8; --err: #FF8A7A; --focus: #8DB8FF;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  z-index: 10; background: var(--bar);
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+.wrap {
+  max-width: 1040px; margin-left: auto; margin-right: auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- header ---------- */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--bar); color: var(--bar-ink); }
+.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px; }
+.logo { font-family: var(--font-display); font-size: 1.35rem; letter-spacing: .02em; color: var(--yellow); text-decoration: none; }
+.logo b { color: var(--orange); font-weight: inherit; }
+.top .tag { font-size: .85rem; color: var(--bar-ink); opacity: .75; display: none; }
+.cartbtn {
+  position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
+  font: inherit; font-weight: 800; color: var(--on-accent); background: var(--yellow);
+  border: 2px solid var(--yellow); border-radius: 10px; padding: 6px 14px; cursor: pointer;
+}
+.cartbtn svg { width: 22px; height: 22px; }
+.badge {
+  min-width: 24px; height: 24px; padding: 0 6px; display: inline-grid; place-items: center;
+  border-radius: 999px; background: var(--red); color: #fff; font-size: .85rem; font-weight: 800;
+}
+.badge.pop { animation: pop .35s ease; }
+@keyframes pop { 50% { transform: scale(1.35); } }
+
+/* ---------- hero ---------- */
+.hero { background: var(--hero-bg); color: var(--hero-ink); }
+.hero .wrap { display: grid; gap: 20px; align-items: center; padding-block: 34px 40px; }
+.pill { display: inline-block; font-weight: 800; font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; background: var(--yellow); color: var(--on-accent); padding: 4px 12px; border-radius: 999px; }
+.hero h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(1.9rem, 6.4vw, 3.3rem); line-height: 1.08; margin-top: 14px; }
+.hero h1 span { color: var(--yellow); }
+.hero .tagline { font-size: clamp(1.1rem, 3.2vw, 1.45rem); font-weight: 800; color: var(--yellow); margin: 14px 0 0; }
+.hero .fine { margin: 10px 0 0; opacity: .85; max-width: 46ch; }
+.hero .btn { margin-top: 20px; display: inline-flex; align-items: center; text-decoration: none; }
+.stall { display: none; position: relative; aspect-ratio: 1 / 1; width: 100%; max-width: 340px; justify-self: center; }
+.stall::before { content: ""; position: absolute; inset: 6%; border-radius: 50%; background: var(--yellow); }
+.stall svg { position: absolute; width: 64%; aspect-ratio: 320 / 220; height: auto; }
+.stall .s1 { left: -2%; top: 8%; animation: bob 4s ease-in-out infinite alternate; }
+.stall .s2 { right: -2%; bottom: 6%; animation: bob 4.6s ease-in-out -2s infinite alternate; }
+@keyframes bob { to { transform: translateY(-8px) rotate(1.5deg); } }
+.awning { height: 18px; border-bottom: 3px solid var(--edge); background: repeating-linear-gradient(90deg, var(--red) 0 34px, var(--yellow) 34px 68px); }
+
+/* ---------- sections ---------- */
+section { padding-block: 34px 8px; }
+.sec-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-bottom: 18px; }
+.sec-head h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.7rem; }
+.sec-head p { margin: 0; color: var(--muted); }
+
+.btn {
+  font: inherit; font-weight: 800; min-height: 48px; padding: 10px 18px; cursor: pointer;
+  color: var(--on-accent); background: var(--orange);
+  border: 2px solid var(--edge); border-radius: 10px; box-shadow: 3px 3px 0 var(--edge);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--edge); }
+.btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--edge); }
+.btn.alt { background: var(--yellow); }
+.btn.ghost { background: transparent; color: var(--ink); box-shadow: none; }
+.btn.wa { background: var(--wa); color: #fff; font-size: 1.15rem; display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; width: 100%; min-height: 56px; }
+.btn.wa svg { width: 26px; height: 26px; flex: none; }
+.btn.wa[aria-disabled="true"] { opacity: .55; }
+.btn.sm { min-height: 40px; padding: 6px 12px; box-shadow: none; font-size: .9rem; }
+
+/* ---------- menu cards ---------- */
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 24px; align-items: start; }
+.card { min-width: 0; background: var(--surface); border: 2px solid var(--edge); border-radius: 14px; box-shadow: 6px 6px 0 var(--edge); overflow: hidden; transition: transform .15s ease; }
+.card:hover { transform: translateY(-3px); }
+.art { background: var(--art-bg); aspect-ratio: 16 / 10; display: grid; place-items: center; border-bottom: 2px solid var(--edge); overflow: hidden; }
+.art svg, .art img { width: 100%; height: 100%; object-fit: cover; }
+.card-body { display: grid; gap: 12px; padding: 16px; }
+.card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.card h3 { font-family: var(--font-display); font-weight: 400; font-size: 1.35rem; }
+.price-box { text-align: right; }
+.price { font-weight: 800; font-size: 1.35rem; color: var(--price); white-space: nowrap; }
+.price-note { display: block; font-size: .82rem; color: var(--muted); white-space: nowrap; }
+.desc { margin: 0; color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.row .grow { flex: 1 1 160px; }
+.qty { display: inline-flex; align-items: center; border: 2px solid var(--edge); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.qty button { font: inherit; font-size: 1.3rem; font-weight: 800; width: 44px; height: 44px; border: 0; background: var(--yellow); color: var(--on-accent); cursor: pointer; }
+.qty button:disabled { opacity: .4; cursor: default; }
+.qty .qval { min-width: 44px; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+.panel { display: grid; gap: 16px; border-top: 2px dashed var(--line); padding-top: 14px; }
+.panel:not([hidden]) { animation: rise .25s ease; }
+@keyframes rise { from { opacity: 0; transform: translateY(-6px); } }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+legend { font-weight: 800; padding: 0; margin-bottom: 4px; font-size: 1.05rem; }
+.hint { color: var(--muted); font-size: .88rem; margin: 0 0 8px; }
+.err { margin: 8px 0 0; color: var(--err); font-weight: 700; }
+.opts { display: grid; gap: 8px; }
+.opt { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 8px 12px; border: 2px solid var(--line); border-radius: 10px; cursor: pointer; font-weight: 600; background: var(--bg); }
+.opt:has(input:checked) { border-color: var(--orange); background: var(--art-bg); }
+.opt input { width: 22px; height: 22px; accent-color: var(--orange); flex: none; margin: 0; }
+
+.packs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.pack { position: relative; display: grid; justify-items: center; align-content: start; gap: 4px; padding: 12px 8px 10px; border: 2px solid var(--line); border-radius: 12px; cursor: pointer; background: var(--bg); font-weight: 800; text-align: center; min-width: 0; }
+.pack svg { width: 62px; height: 84px; }
+.pack input { position: absolute; top: 8px; left: 8px; width: 22px; height: 22px; margin: 0; accent-color: var(--orange); }
+.pack .sel { display: none; position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 999px; background: var(--orange); color: var(--on-accent); place-items: center; font-size: .9rem; font-weight: 800; }
+.pack:has(input:checked) { border-color: var(--orange); background: var(--art-bg); box-shadow: 0 0 0 3px var(--orange); }
+.pack:has(input:checked) .sel { display: grid; }
+.pack:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.calc { display: grid; gap: 2px; padding: 12px; border-radius: 10px; border: 2px dashed var(--orange); }
+.calc .c1 { font-weight: 700; }
+.calc .c2 { font-weight: 800; font-size: 1.15rem; color: var(--price); }
+.pick { display: grid; gap: 6px; padding: 12px; border-radius: 10px; background: var(--art-bg); border: 2px solid var(--line); }
+.pick-row { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.pick .k { font-size: .85rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); min-width: 5.2rem; }
+em { font-style: normal; font-weight: 700; font-size: .85rem; background: var(--yellow); color: var(--on-accent); border-radius: 999px; padding: 2px 10px; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; border: 1px solid rgba(0, 0, 0, .35); vertical-align: baseline; }
+.pick i, .line i { font-style: normal; color: var(--muted); }
+
+/* ---------- your order ---------- */
+.backdrop { position: fixed; inset: 0; z-index: 35; background: rgba(10, 6, 4, .6); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+.backdrop.open { opacity: 1; pointer-events: auto; }
+.drawer {
+  position: fixed; top: 0; bottom: 0; right: 0; z-index: 40; width: min(440px, 100%);
+  background: var(--surface); color: var(--ink); border-left: 2px solid var(--edge);
+  overflow-y: auto; overscroll-behavior: contain;
+  padding-right: env(safe-area-inset-right, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  visibility: hidden; transform: translateX(100%); transition: transform .25s ease, visibility 0s .25s;
+}
+.drawer.open { visibility: visible; transform: none; transition: transform .25s ease; }
+.order-head {
+  position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 10px;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 14px max(16px, env(safe-area-inset-left, 0px));
+  background: var(--bar); color: var(--bar-ink);
+}
+.order-head h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.4rem; color: var(--yellow); }
+.closebtn { margin-left: auto; font: inherit; font-size: 1.2rem; font-weight: 800; width: 44px; height: 44px; border-radius: 10px; border: 2px solid var(--yellow); background: transparent; color: var(--yellow); cursor: pointer; }
+.who { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 8px 8px 12px; border-radius: 10px; background: var(--art-bg); border: 2px solid var(--line); }
+.who span { min-width: 0; overflow-wrap: anywhere; }
+
+.gate { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; overflow-y: auto; background: rgba(10, 6, 4, .8); padding: 16px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px)); }
+.gate-card { width: min(100%, 420px); background: var(--surface); border: 2px solid var(--edge); border-radius: 14px; box-shadow: 6px 6px 0 var(--edge); padding: 22px 18px; display: grid; gap: 12px; }
+.gate-card .pill { justify-self: start; }
+.gate-card h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.6rem; }
+.gate-card p { margin: 0; color: var(--muted); }
+.gate-card .err { margin: 0; color: var(--err); }
+.gate-card label { font-weight: 800; }
+.gate-card input { font: inherit; font-size: 1rem; width: 100%; min-height: 50px; padding: 8px 14px; border: 2px solid var(--edge); border-radius: 10px; background: var(--bg); color: var(--ink); }
+.order-body { padding: 8px 16px 18px; display: grid; gap: 14px; }
+.empty { text-align: center; padding: 26px 8px; color: var(--muted); }
+.empty strong { display: block; color: var(--ink); font-size: 1.15rem; margin-bottom: 4px; }
+.lines { list-style: none; margin: 0; padding: 0; }
+.line { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; padding: 14px 0; border-bottom: 2px dashed var(--line); }
+.line-name { font-weight: 800; font-size: 1.05rem; }
+.line-unit { display: block; color: var(--muted); font-size: .9rem; }
+.line-total { font-weight: 800; font-size: 1.1rem; color: var(--price); align-self: start; }
+.line-tags { display: grid; gap: 4px; margin-top: 6px; }
+.line-tags .k { font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-right: 6px; }
+.line-ctl { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.totals { display: grid; gap: 6px; padding-top: 4px; }
+.trow { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.trow.big { padding-top: 6px; border-top: 2px solid var(--edge); }
+.trow.big .lbl { font-weight: 800; font-size: 1.1rem; }
+.trow .amt { font-family: var(--font-display); font-size: 2rem; color: var(--price); }
+.actions { display: grid; gap: 10px; }
+.note { margin: 0; color: var(--muted); font-size: .92rem; }
+.warn { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--warn-bg); color: var(--warn-ink); font-weight: 600; }
+details { border: 2px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+summary { cursor: pointer; font-weight: 700; min-height: 32px; display: flex; align-items: center; }
+pre { margin: 8px 0 4px; white-space: pre-wrap; overflow-wrap: anywhere; font: .88rem/1.5 var(--font-body); }
+
+footer { padding-block: 30px 40px; color: var(--muted); font-size: .9rem; }
+
+/* ---------- toast ---------- */
+#toast {
+  position: fixed; z-index: 60; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translate(-50%, 24px); opacity: 0; pointer-events: none;
+  width: max-content; max-width: min(calc(100% - 32px), 420px);
+  background: var(--bar); color: var(--bar-ink); border: 2px solid var(--yellow); border-radius: 12px;
+  padding: 10px 16px; display: grid; gap: 2px; transition: opacity .2s ease, transform .2s ease;
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+#toast strong { color: var(--yellow); }
+#toast span { font-size: .9rem; }
+
+@media (min-width: 640px) { .top .tag { display: block; } }
+@media (min-width: 780px) {
+  .hero .wrap { grid-template-columns: 1.2fr 1fr; }
+  .stall { display: block; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+</style>
+
+<!-- Illustrations. Replace with real photos by setting "photo" on a menu item in CONFIG. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="gShake" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F3E7D3"/><stop offset="1" stop-color="#B99872"/>
+    </linearGradient>
+  </defs>
+  <symbol id="art-shake" viewBox="0 0 320 220">
+    <ellipse cx="160" cy="207" rx="80" ry="9" fill="#000" opacity=".2"/>
+    <g transform="rotate(14 190 60)">
+      <rect x="182" y="4" width="12" height="112" rx="4" fill="#E0301E"/>
+      <path d="M182 20h12M182 36h12M182 52h12M182 68h12M182 84h12" stroke="#fff" stroke-width="5" opacity=".9"/>
+    </g>
+    <path d="M96 78 L224 78 L208 192 Q207 201 198 201 L122 201 Q113 201 112 192 Z" fill="url(#gShake)"/>
+    <g fill="#2A1B15">
+      <ellipse cx="128" cy="112" rx="6" ry="3.5" transform="rotate(-20 128 112)"/>
+      <ellipse cx="152" cy="140" rx="5" ry="3" transform="rotate(25 152 140)"/>
+      <ellipse cx="184" cy="120" rx="6" ry="3.5" transform="rotate(10 184 120)"/>
+      <ellipse cx="170" cy="168" rx="5" ry="3" transform="rotate(-30 170 168)"/>
+      <ellipse cx="136" cy="174" rx="6" ry="3.5" transform="rotate(15 136 174)"/>
+      <ellipse cx="202" cy="150" rx="5" ry="3" transform="rotate(-10 202 150)"/>
+      <ellipse cx="160" cy="100" rx="4" ry="2.5"/>
+      <ellipse cx="194" cy="180" rx="5" ry="3" transform="rotate(20 194 180)"/>
+    </g>
+    <path d="M106 92 L116 188" stroke="#fff" stroke-opacity=".55" stroke-width="6" stroke-linecap="round"/>
+    <ellipse cx="160" cy="80" rx="68" ry="9" fill="#EADBC4"/>
+    <g fill="#FFF8EC">
+      <circle cx="118" cy="76" r="22"/><circle cx="148" cy="62" r="26"/>
+      <circle cx="182" cy="64" r="26"/><circle cx="208" cy="78" r="20"/>
+    </g>
+    <path d="M108 72 Q128 54 146 72 T182 62 T214 76" fill="none" stroke="#3A2218" stroke-width="5" stroke-linecap="round"/>
+    <g fill="#2A1B15"><circle cx="140" cy="58" r="3"/><circle cx="170" cy="50" r="2.5"/><circle cx="126" cy="80" r="2.5"/></g>
+    <g transform="translate(212 46) rotate(20)">
+      <rect x="-26" y="-14" width="52" height="9" rx="4" fill="#2A1B15"/>
+      <rect x="-24" y="-5" width="48" height="8" rx="3" fill="#FFF8EC"/>
+      <rect x="-26" y="3" width="52" height="9" rx="4" fill="#2A1B15"/>
+    </g>
+  </symbol>
+  <symbol id="art-chips" viewBox="0 0 320 220">
+    <ellipse cx="160" cy="210" rx="74" ry="8" fill="#000" opacity=".2"/>
+    <g stroke="#D99A1E" stroke-width="2" fill="#F8CC4A">
+      <rect x="100" y="40" width="46" height="34" rx="12" transform="rotate(-24 123 57)"/>
+      <rect x="138" y="22" width="50" height="36" rx="13" transform="rotate(10 163 40)"/>
+      <rect x="178" y="38" width="46" height="34" rx="12" transform="rotate(28 201 55)"/>
+      <rect x="118" y="62" width="50" height="36" rx="13" transform="rotate(-8 143 80)"/>
+      <rect x="160" y="64" width="48" height="36" rx="13" transform="rotate(16 184 82)"/>
+      <rect x="104" y="80" width="52" height="34" rx="12"/>
+      <rect x="170" y="84" width="52" height="30" rx="12"/>
+    </g>
+    <g fill="none" stroke-linecap="round">
+      <path d="M104 70 Q124 52 142 72 T180 66 T222 82" stroke="#FFF6DE" stroke-width="5"/>
+      <path d="M112 98 Q134 82 152 100 T198 94" stroke="#A31D14" stroke-width="4"/>
+      <path d="M122 58 Q146 40 168 62 T214 56" stroke="#FF7A2B" stroke-width="4"/>
+    </g>
+    <g fill="#3FA34D">
+      <rect x="128" y="50" width="8" height="8" rx="2" transform="rotate(20 132 54)"/>
+      <rect x="186" y="46" width="8" height="8" rx="2" transform="rotate(-15 190 50)"/>
+      <rect x="150" y="84" width="8" height="8" rx="2" transform="rotate(35 154 88)"/>
+    </g>
+    <g fill="#E0301E">
+      <circle cx="160" cy="48" r="4.5"/><circle cx="204" cy="74" r="4.5"/><circle cx="122" cy="88" r="4.5"/>
+    </g>
+    <g fill="#CDE6A0">
+      <rect x="112" y="66" width="12" height="4" rx="2"/><rect x="170" y="78" width="12" height="4" rx="2"/><rect x="196" y="96" width="12" height="4" rx="2"/>
+    </g>
+    <path d="M92 114 L228 114 L210 202 Q209 209 202 209 L118 209 Q111 209 110 202 Z" fill="#E0301E"/>
+    <path d="M97 142 L223 142 L219 164 L101 164 Z" fill="#FFC619"/>
+    <circle cx="160" cy="153" r="15" fill="#141010"/>
+    <text x="160" y="159" text-anchor="middle" font-family="Bungee, Impact, sans-serif" font-size="17" fill="#FFC619">S</text>
+    <rect x="86" y="107" width="148" height="12" rx="6" fill="#B8210F"/>
+  </symbol>
+  <!-- Generic chips packet in a plain colour. The colour comes from the "color" of the svg using it. -->
+  <symbol id="art-pack" viewBox="0 0 120 160">
+    <path d="M16 18 L24 11 L32 18 L40 11 L48 18 L56 11 L64 18 L72 11 L80 18 L88 11 L96 18 L104 11 L104 22 Q109 80 104 138 L104 149 L96 142 L88 149 L80 142 L72 149 L64 142 L56 149 L48 142 L40 149 L32 142 L24 149 L16 142 L16 138 Q11 80 16 22 Z" fill="currentColor" stroke="#000" stroke-opacity=".4" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M25 26 Q22 80 25 128" stroke="#fff" stroke-opacity=".38" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <ellipse cx="60" cy="80" rx="31" ry="24" fill="#fff" fill-opacity=".93"/>
+    <path d="M40 80 Q48 62 62 68 Q80 70 82 83 Q73 96 58 94 Q42 94 40 80 Z" fill="#F8CC4A" stroke="#D99A1E" stroke-width="2.5"/>
+    <path d="M50 78 Q60 72 70 80" stroke="#D99A1E" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#top" id="top">Snack<b>Verse</b></a>
+    <span class="tag">School Food Fest</span>
+    <button type="button" class="cartbtn" id="cartBtn" aria-label="Open your cart" aria-haspopup="dialog" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20.5" r="1.4"/><circle cx="18" cy="20.5" r="1.4"/></svg>
+      <span>Cart</span>
+      <span class="badge num" id="cartCount" aria-live="polite">0</span>
+    </button>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <div>
+      <span class="pill">Street food, school style</span>
+      <h1>Welcome to <span>SnackVerse</span> – School Food Fest</h1>
+      <p class="tagline">Choose Your Cravings, Build Your Snack!</p>
+      <p class="fine">Pick your chips, veggies and sauces, add paneer if you like, then send your order on WhatsApp. No sign-up and no online payment.</p>
+      <a class="btn alt" href="#menu">See the menu</a>
+    </div>
+    <div class="stall" aria-hidden="true">
+      <svg class="s1" viewBox="0 0 320 220"><use href="#art-shake"/></svg>
+      <svg class="s2" viewBox="0 0 320 220"><use href="#art-chips"/></svg>
+    </div>
+  </div>
+</div>
+<div class="awning" aria-hidden="true"></div>
+
+<main>
+  <section id="menu">
+    <div class="wrap">
+      <div class="sec-head"><h2>Menu</h2><p>Tap Add to Cart. Chips Chaat is made your way.</p></div>
+      <div class="grid" id="menuGrid"></div>
+    </div>
+  </section>
+
+</main>
+
+<div class="backdrop" id="backdrop"></div>
+<aside class="drawer" id="order" role="dialog" aria-modal="true" aria-labelledby="orderTitle" inert>
+        <div class="order-head">
+          <h2 id="orderTitle">Your Order</h2>
+          <span class="badge num" id="orderCount">0</span>
+          <button type="button" class="closebtn" id="closeCart" aria-label="Close cart">✕</button>
+        </div>
+        <div class="order-body">
+          <div class="who"><span>Order for <strong id="whoName"></strong></span><button type="button" class="btn ghost sm" id="changeName">Change</button></div>
+          <div id="cartEmpty" class="empty"><strong>Your cart is empty</strong>Add a Chips Chaat or an Oreo Shake from the menu.</div>
+          <ul class="lines" id="cartLines" hidden></ul>
+          <div class="totals" id="totalBar" hidden>
+            <div class="trow"><span>Subtotal (<span id="subCount">0</span> items)</span><span class="num" id="subTotal">₹0</span></div>
+            <div class="trow big"><span class="lbl">Grand Total</span><span class="amt num" id="grandTotal">₹0</span></div>
+            <p class="note" id="priceNote"></p>
+          </div>
+          <div class="actions">
+            <p class="warn" id="setupWarn" hidden>WhatsApp number not set. Owner: set <b>whatsappNumber</b> in the CONFIG block near the top of the script.</p>
+            <a class="btn wa" id="waBtn" href="#order" target="_blank" rel="noopener" aria-disabled="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21l1.7-5A9 9 0 1 1 8 19.3L3 21z"/><path d="M8.5 9.5c.5 3 2.500 5 5.500 5.500l1.500-1.500-2-1-1 .8c-1-.4-1.800-1.200-2.200-2.200l.8-1-1-2z"/></svg>
+              <span>Order on WhatsApp</span>
+            </a>
+            <p class="note" id="waNote">This opens WhatsApp with your order already typed. Press Send in WhatsApp to place it. Nothing is sent until you do.</p>
+            <details id="previewBox" hidden><summary>See the message that will open in WhatsApp</summary><pre id="msgPreview"></pre></details>
+            <button type="button" class="btn ghost" id="clearBtn" hidden>Clear Cart</button>
+          </div>
+        </div>
+</aside>
+
+<footer><div class="wrap">SnackVerse · School Food Fest · Your order is confirmed with us on WhatsApp.</div></footer>
+
+<div class="gate" id="nameGate" role="dialog" aria-modal="true" aria-labelledby="gateTitle" hidden>
+  <form class="gate-card" id="nameForm" novalidate>
+    <span class="pill">Welcome</span>
+    <h2 id="gateTitle">What’s your name?</h2>
+    <p>Your name goes into the WhatsApp order, so we know who it is for.</p>
+    <label for="nameInput">Your name</label>
+    <input id="nameInput" type="text" maxlength="40" autocomplete="name" placeholder="e.g. Rahul Sharma" enterkeyhint="done">
+    <p class="err" id="nameErr" role="alert" hidden>Please type your name to continue.</p>
+    <div class="row"><button type="submit" class="btn grow">Start Ordering</button><button type="button" class="btn ghost" id="nameCancel" hidden>Cancel</button></div>
+  </form>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* =====================================================================
+   EDIT HERE: WhatsApp number, prices, menu, chips colours, veggies, sauces.
+   ===================================================================== */
+const CONFIG = {
+  // Country code + number, digits only. No plus sign, no spaces.
+  whatsappNumber: "918791384218",
+  currency: "₹",
+  festName: "School Food Fest",
+  maxQtyPerLine: 20,
+
+  paneerPrice: 30,   // extra per serving of a customizable item when Paneer is ticked
+
+  // Packet colours are only for choosing. Flavours are not named because they are not confirmed.
+  chips: [
+    { id: "blue",   name: "Blue Lay’s",   color: "#1E5FD8" },
+    { id: "green",  name: "Green Lay’s",  color: "#1F9D4A" },
+    { id: "red",    name: "Red Lay’s",    color: "#D62828" },
+    { id: "yellow", name: "Yellow Lay’s", color: "#FFC619" }
+  ],
+  veggies: [
+    { id: "capsicum", name: "Capsicum" },
+    { id: "cabbage",  name: "Cabbage" },
+    { id: "onion",    name: "Onion" },
+    { id: "tomato",   name: "Tomato" }
+  ],
+  sauces: [
+    { id: "mayo",     name: "Mayonnaise" },
+    { id: "chilli",   name: "Red Chilli Sauce" },
+    { id: "red",      name: "Red Sauce" }
+  ],
+
+  // price: base price per item. customizable: true shows chips colour, veggies, sauces and paneer.
+  // art: "shake" or "chips" (built-in illustrations). photo: optional image URL, overrides art.
+  menu: [
+    { id: "chips-chaat", name: "Lay’s Chips Chaat", price: 40, customizable: true, art: "chips", photo: "",
+      desc: "Crunchy Lay’s tossed in a cup with veggies and sauces. Add paneer if you like." },
+    { id: "oreo-shake",  name: "Oreo Shake",        price: 60, customizable: false, art: "shake", photo: "",
+      desc: "Thick, cold and loaded with crushed Oreo, topped with whipped cream." }
+  ]
+};
+
+/* ===== Cart, price and message logic (pure functions, no page access) ===== */
+/* LOGIC:START */
+function clampQty(cfg, n) { return Math.max(1, Math.min(cfg.maxQtyPerLine, Math.floor(Number(n)) || 1)); }
+function pickIds(list, chosen) { return list.map(o => o.id).filter(id => chosen.includes(id)); }
+function namesOf(list, ids) { return ids.map(id => (list.find(o => o.id === id) || { name: id }).name); }
+function findById(list, id) { return list.find(o => o.id === id); }
+
+// Returns a new cart. A customizable item without a valid chips colour is not added.
+function addToCart(cfg, cart, id, qty, opts) {
+  const item = findById(cfg.menu, id);
+  if (!item) return cart;
+  const o = opts || {};
+  let chip = "", sauces = [], veggies = [], paneer = false;
+  if (item.customizable) {
+    if (!findById(cfg.chips, o.chip)) return cart;
+    chip = o.chip;
+    sauces = pickIds(cfg.sauces, o.sauces || []);
+    veggies = pickIds(cfg.veggies, o.veggies || []);
+    paneer = !!o.paneer;
+  }
+  const key = [id, chip, veggies.join("+"), sauces.join("+"), paneer ? "paneer" : "plain"].join("|");
+  const next = cart.map(l => ({ ...l, sauces: [...l.sauces], veggies: [...l.veggies] }));
+  const found = next.find(l => l.key === key);
+  if (found) found.qty = clampQty(cfg, found.qty + clampQty(cfg, qty));
+  else next.push({ key, id, qty: clampQty(cfg, qty), chip, veggies, sauces, paneer });
+  return next;
+}
+function changeQty(cfg, cart, key, delta) {
+  return cart.map(l => l.key === key ? { ...l, qty: clampQty(cfg, l.qty + delta) } : l);
+}
+function removeLine(cart, key) { return cart.filter(l => l.key !== key); }
+function cartCount(cart) { return cart.reduce((n, l) => n + l.qty, 0); }
+// Price of ONE serving: base price, plus the paneer charge for that serving if ticked.
+function unitPrice(cfg, line) {
+  const item = findById(cfg.menu, line.id);
+  return item.price + (item.customizable && line.paneer ? cfg.paneerPrice : 0);
+}
+function lineTotal(cfg, line) { return unitPrice(cfg, line) * line.qty; }
+function cartTotal(cfg, cart) { return cart.reduce((sum, l) => sum + lineTotal(cfg, l), 0); }
+function money(cfg, n) {
+  const whole = Number.isInteger(n);
+  return cfg.currency + n.toLocaleString("en-IN", { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2 });
+}
+function cleanNumber(raw) { return String(raw).replace(/[\s+\-]/g, ""); }
+function isValidNumber(raw) { return /^\d{11,15}$/.test(cleanNumber(raw)); }
+
+function cleanName(s) { return String(s || "").replace(/\s+/g, " ").trim().slice(0, 40); }
+
+function buildMessage(cfg, cart, name) {
+  if (!cart.length) return "";
+  const who = cleanName(name);
+  const blocks = cart.map((l, i) => {
+    const item = findById(cfg.menu, l.id);
+    const lines = [(i + 1) + ". " + item.name];
+    if (item.customizable) {
+      lines.push("   Chips: " + findById(cfg.chips, l.chip).name);
+      lines.push("   Vegetables: " + (namesOf(cfg.veggies, l.veggies).join(", ") || "None"));
+      lines.push("   Sauces: " + (namesOf(cfg.sauces, l.sauces).join(", ") || "None"));
+      lines.push("   Paneer: " + (l.paneer ? "Yes" : "No"));
+    }
+    lines.push("   Quantity: " + l.qty);
+    const unit = money(cfg, unitPrice(cfg, l));
+    lines.push("   Price: " + (l.qty > 1 ? unit + " × " + l.qty + " = " + money(cfg, lineTotal(cfg, l)) : unit));
+    return lines.join("\n");
+  });
+  return "Hello SnackVerse! I want to place an order for the " + cfg.festName + ".\n\n" +
+    (who ? "NAME: " + who + "\n\n" : "") +
+    "ORDER DETAILS\n\n" + blocks.join("\n\n") + "\n\n" +
+    "GRAND TOTAL: " + money(cfg, cartTotal(cfg, cart)) + "\n\n" +
+    "Please confirm my order. Thank you!";
+}
+function buildLink(cfg, message) {
+  return "https://wa.me/" + cleanNumber(cfg.whatsappNumber) + "?text=" + encodeURIComponent(message);
+}
+/* LOGIC:END */
+
+/* ===== Page code ===== */
+const $ = (sel, root) => (root || document).querySelector(sel);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const STORE = "snackverse-cart-v2";
+let cart = loadCart();
+let customerName = loadName();
+
+function loadCart() {
+  try {
+    const arr = JSON.parse(sessionStorage.getItem(STORE) || "[]");
+    if (!Array.isArray(arr)) return [];
+    return arr.reduce((c, l) => addToCart(CONFIG, c, l.id, l.qty, l), []);
+  } catch (e) { return []; }
+}
+function saveCart() { try { sessionStorage.setItem(STORE, JSON.stringify(cart)); } catch (e) { /* storage unavailable */ } }
+// Cart and name live only for this browser tab, so the next student on a shared phone starts fresh.
+function loadName() { try { return cleanName(sessionStorage.getItem("snackverse-name") || ""); } catch (e) { return ""; } }
+function saveName() { try { sessionStorage.setItem("snackverse-name", customerName); } catch (e) { /* storage unavailable */ } }
+
+let toastTimer;
+function toast(title, detail) {
+  const t = $("#toast");
+  t.innerHTML = "<strong>" + esc(title) + "</strong>" + (detail ? "<span>" + esc(detail) + "</span>" : "");
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+/* ---------- menu ---------- */
+function checkboxesHTML(item, group, list) {
+  return list.map(o => {
+    const id = item.id + "-" + group + "-" + o.id;
+    return '<label class="opt" for="' + id + '"><input type="checkbox" id="' + id + '" value="' + esc(o.id) + '" data-group="' + group + '"><span>' + esc(o.name) + "</span></label>";
+  }).join("");
+}
+function packsHTML(item) {
+  return CONFIG.chips.map(c => {
+    const id = item.id + "-chip-" + c.id;
+    return '<label class="pack" for="' + id + '">' +
+      '<input type="radio" id="' + id + '" name="' + item.id + '-chip" value="' + esc(c.id) + '" data-group="chip">' +
+      '<span class="sel" aria-hidden="true">✓</span>' +
+      '<svg viewBox="0 0 120 160" style="color:' + esc(c.color) + '" aria-hidden="true"><use href="#art-pack"/></svg>' +
+      "<span>" + esc(c.name) + "</span></label>";
+  }).join("");
+}
+function qtyHTML(item) {
+  return '<div class="qty" role="group" aria-label="Quantity for ' + esc(item.name) + '">' +
+    '<button type="button" data-act="qty" data-d="-1" aria-label="Decrease quantity">−</button>' +
+    '<span class="qval" data-role="qty">1</span>' +
+    '<button type="button" data-act="qty" data-d="1" aria-label="Increase quantity">+</button></div>';
+}
+function cardHTML(item) {
+  const art = item.photo
+    ? '<img src="' + esc(item.photo) + '" alt="' + esc(item.name) + '" loading="lazy">'
+    : '<svg viewBox="0 0 320 220" role="img" aria-label="' + esc(item.name) + '"><use href="#art-' + esc(item.art) + '"/></svg>';
+  const addBtn = '<button type="button" class="btn grow" data-act="add">Add to Cart</button>';
+  const calc = '<div class="calc" data-role="calc" aria-live="polite"></div>';
+  let actions;
+  if (item.customizable) {
+    const paneerId = item.id + "-paneer";
+    actions =
+      '<button type="button" class="btn alt" data-act="toggle" aria-expanded="false" aria-controls="panel-' + item.id + '">Choose &amp; Customize</button>' +
+      '<div class="panel" id="panel-' + item.id + '" hidden>' +
+        '<fieldset><legend>Choose Your Lay’s Chips</legend><p class="hint">Pick one packet colour. Colours are for choosing only.</p>' +
+          '<div class="packs">' + packsHTML(item) + "</div>" +
+          '<p class="err" data-role="chip-err" role="alert" hidden>Pick one Lay’s packet colour to continue.</p></fieldset>' +
+        '<fieldset><legend>Choose Your Veggies</legend><p class="hint">Pick any combination, or none.</p><div class="opts">' + checkboxesHTML(item, "veggies", CONFIG.veggies) + "</div></fieldset>" +
+        '<fieldset><legend>Choose Your Sauces</legend><p class="hint">Pick any, or none. Veggies and sauces are free.</p><div class="opts">' + checkboxesHTML(item, "sauces", CONFIG.sauces) + "</div></fieldset>" +
+        '<fieldset><legend>Paneer (optional)</legend><div class="opts"><label class="opt" for="' + paneerId + '"><input type="checkbox" id="' + paneerId + '" data-group="paneer"><span>Add Paneer (+' + money(CONFIG, CONFIG.paneerPrice) + ")</span></label></div></fieldset>" +
+        calc +
+        '<div class="pick" aria-live="polite"></div>' +
+        '<div class="row">' + qtyHTML(item) + addBtn + "</div>" +
+      "</div>";
+  } else {
+    actions = calc + '<div class="row">' + qtyHTML(item) + addBtn + "</div>";
+  }
+  const note = item.customizable ? '<span class="price-note">+' + money(CONFIG, CONFIG.paneerPrice) + " with paneer</span>" : "";
+  return '<article class="card" data-item="' + esc(item.id) + '" data-name="' + esc(item.name) + '">' +
+    '<div class="art">' + art + "</div>" +
+    '<div class="card-body"><div class="card-top"><h3>' + esc(item.name) + '</h3><div class="price-box"><span class="price num">' + money(CONFIG, item.price) + "</span>" + note + "</div></div>" +
+    '<p class="desc">' + esc(item.desc) + "</p>" + actions + "</div></article>";
+}
+function renderMenu() {
+  $("#menuGrid").innerHTML = CONFIG.menu.map(cardHTML).join("");
+  document.querySelectorAll("#menuGrid [data-item]").forEach(refreshCard);
+}
+
+function readCard(card) {
+  const chipEl = card.querySelector('input[data-group="chip"]:checked');
+  const grab = g => [...card.querySelectorAll('input[data-group="' + g + '"]:checked')].map(i => i.value);
+  const paneerEl = card.querySelector('input[data-group="paneer"]');
+  return {
+    chip: chipEl ? chipEl.value : "",
+    veggies: grab("veggies"),
+    sauces: grab("sauces"),
+    paneer: !!(paneerEl && paneerEl.checked),
+    qty: Number($('[data-role="qty"]', card).textContent)
+  };
+}
+// Updates the live price line and the "Your selection" box for one card.
+function refreshCard(card) {
+  const item = CONFIG.menu.find(m => m.id === card.dataset.item);
+  const s = readCard(card);
+  const unit = item.price + (item.customizable && s.paneer ? CONFIG.paneerPrice : 0);
+  const calc = $('[data-role="calc"]', card);
+  const first = item.customizable
+    ? (s.paneer
+        ? money(CONFIG, item.price) + " base price + " + money(CONFIG, CONFIG.paneerPrice) + " paneer = " + money(CONFIG, unit)
+        : money(CONFIG, item.price) + " base price, no paneer = " + money(CONFIG, unit))
+    : money(CONFIG, unit) + " each";
+  calc.innerHTML = '<span class="c1 num">' + esc(first) + '</span><span class="c2 num">' +
+    s.qty + " × " + money(CONFIG, unit) + " = " + money(CONFIG, unit * s.qty) + "</span>";
+
+  const pick = $(".pick", card);
+  if (pick) {
+    const chipName = s.chip ? CONFIG.chips.find(c => c.id === s.chip).name : "";
+    const pills = list => list.length ? list.map(x => "<em>" + esc(x) + "</em>").join("") : "<i>None</i>";
+    const row = (label, html) => '<div class="pick-row"><span class="k">' + label + "</span>" + html + "</div>";
+    pick.innerHTML = "<strong>Your " + esc(card.dataset.name) + "</strong>" +
+      row("Chips", chipName ? "<em>" + esc(chipName) + "</em>" : "<i>Not chosen yet</i>") +
+      row("Veggies", pills(namesOf(CONFIG.veggies, s.veggies))) +
+      row("Sauces", pills(namesOf(CONFIG.sauces, s.sauces))) +
+      row("Paneer", s.paneer ? "<em>Yes (+" + esc(money(CONFIG, CONFIG.paneerPrice)) + ")</em>" : "<i>No</i>");
+  }
+}
+function setQtyLabel(card, n) { $('[data-role="qty"]', card).textContent = n; }
+
+$("#menuGrid").addEventListener("click", e => {
+  const btn = e.target.closest("[data-act]");
+  if (!btn) return;
+  const card = btn.closest("[data-item]");
+  const id = card.dataset.item;
+  const act = btn.dataset.act;
+  if (act === "qty") {
+    setQtyLabel(card, clampQty(CONFIG, Number($('[data-role="qty"]', card).textContent) + Number(btn.dataset.d)));
+    refreshCard(card);
+  } else if (act === "toggle") {
+    const panel = $(".panel", card);
+    const opening = panel.hidden;
+    panel.hidden = !opening;
+    btn.setAttribute("aria-expanded", String(opening));
+    btn.textContent = opening ? "Hide customization" : "Choose & Customize";
+  } else if (act === "add") {
+    const s = readCard(card);
+    const item = CONFIG.menu.find(m => m.id === id);
+    if (item.customizable && !s.chip) {
+      const err = $('[data-role="chip-err"]', card);
+      err.hidden = false;
+      const first = card.querySelector('input[data-group="chip"]');
+      if (first) first.focus();
+      if (err.scrollIntoView) err.scrollIntoView({ block: "nearest" });
+      return;
+    }
+    cart = addToCart(CONFIG, cart, id, s.qty, s);
+    saveCart();
+    renderCart(true);
+    toast("Added to Cart!", item.name + " × " + s.qty);
+    setQtyLabel(card, 1);
+    card.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(i => { i.checked = false; });
+    refreshCard(card);
+  }
+});
+$("#menuGrid").addEventListener("change", e => {
+  const card = e.target.closest("[data-item]");
+  if (!card || !e.target.matches("input")) return;
+  if (e.target.dataset.group === "chip") $('[data-role="chip-err"]', card).hidden = true;
+  refreshCard(card);
+});
+
+/* ---------- cart ---------- */
+function lineHTML(l) {
+  const item = CONFIG.menu.find(m => m.id === l.id);
+  const unit = unitPrice(CONFIG, l);
+  let tags = "", unitText = money(CONFIG, unit) + " each";
+  if (item.customizable) {
+    const chip = CONFIG.chips.find(c => c.id === l.chip);
+    const pills = list => list.length ? list.map(n => "<em>" + esc(n) + "</em>").join(" ") : "<i>None</i>";
+    tags = '<div class="line-tags">' +
+      '<div><span class="k">Chips</span><em><span class="dot" style="background:' + esc(chip.color) + '"></span>' + esc(chip.name) + "</em></div>" +
+      '<div><span class="k">Veggies</span>' + pills(namesOf(CONFIG.veggies, l.veggies)) + "</div>" +
+      '<div><span class="k">Sauces</span>' + pills(namesOf(CONFIG.sauces, l.sauces)) + "</div>" +
+      '<div><span class="k">Paneer</span>' + (l.paneer ? "<em>Yes (+" + esc(money(CONFIG, CONFIG.paneerPrice)) + ")</em>" : "<i>No</i>") + "</div></div>";
+    if (l.paneer) unitText = money(CONFIG, item.price) + " + " + money(CONFIG, CONFIG.paneerPrice) + " paneer = " + money(CONFIG, unit) + " each";
+  }
+  return '<li class="line" data-key="' + esc(l.key) + '">' +
+    '<div><span class="line-name">' + esc(item.name) + '</span><span class="line-unit num">' + esc(unitText) + "</span>" + tags + "</div>" +
+    '<div class="line-total num">' + money(CONFIG, lineTotal(CONFIG, l)) + "</div>" +
+    '<div class="line-ctl"><div class="qty" role="group" aria-label="Quantity for ' + esc(item.name) + '">' +
+      '<button type="button" data-cact="dec" aria-label="Decrease quantity"' + (l.qty <= 1 ? " disabled" : "") + ">−</button>" +
+      '<span class="qval">' + l.qty + "</span>" +
+      '<button type="button" data-cact="inc" aria-label="Increase quantity"' + (l.qty >= CONFIG.maxQtyPerLine ? " disabled" : "") + ">+</button></div>" +
+      '<button type="button" class="btn ghost sm" data-cact="remove">Remove</button></div></li>';
+}
+
+function renderCart(pop) {
+  const count = cartCount(cart);
+  const empty = cart.length === 0;
+  for (const el of [$("#cartCount"), $("#orderCount")]) {
+    el.textContent = count;
+    if (pop) { el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
+  }
+  $("#cartEmpty").hidden = !empty;
+  $("#cartLines").hidden = empty;
+  $("#totalBar").hidden = empty;
+  $("#clearBtn").hidden = empty;
+  $("#previewBox").hidden = empty;
+  $("#cartLines").innerHTML = cart.map(lineHTML).join("");
+  const total = money(CONFIG, cartTotal(CONFIG, cart));
+  $("#subCount").textContent = count;
+  $("#subTotal").textContent = total;
+  $("#grandTotal").textContent = total;
+  $("#priceNote").textContent = "No hidden charges. Veggies and sauces are free. Paneer is +" + money(CONFIG, CONFIG.paneerPrice) + " per serving.";
+  $("#setupWarn").hidden = isValidNumber(CONFIG.whatsappNumber);
+
+  const wa = $("#waBtn");
+  const message = buildMessage(CONFIG, cart, customerName);
+  $("#whoName").textContent = customerName || "(name needed)";
+  $("#msgPreview").textContent = message;
+  if (empty || !isValidNumber(CONFIG.whatsappNumber)) {
+    wa.setAttribute("href", "#order");
+    wa.setAttribute("aria-disabled", "true");
+  } else {
+    wa.setAttribute("href", buildLink(CONFIG, message));
+    wa.setAttribute("aria-disabled", "false");
+  }
+  resetClear();
+}
+
+$("#cartLines").addEventListener("click", e => {
+  const btn = e.target.closest("[data-cact]");
+  if (!btn) return;
+  const key = btn.closest("[data-key]").dataset.key;
+  const act = btn.dataset.cact;
+  if (act === "inc") cart = changeQty(CONFIG, cart, key, 1);
+  if (act === "dec") cart = changeQty(CONFIG, cart, key, -1);
+  if (act === "remove") cart = removeLine(cart, key);
+  saveCart();
+  renderCart(false);
+});
+
+$("#waBtn").addEventListener("click", e => {
+  if (!customerName) {
+    e.preventDefault();
+    openGate(true);
+  } else if (!cart.length) {
+    e.preventDefault();
+    toast("Your cart is empty", "Add something from the menu first.");
+  } else if (!isValidNumber(CONFIG.whatsappNumber)) {
+    e.preventDefault();
+    toast("WhatsApp number not set", "The owner needs to add it in CONFIG.");
+  }
+});
+
+/* Clear Cart asks twice, because pop-up confirmations are not available here. */
+let clearTimer;
+function resetClear() { clearTimeout(clearTimer); const b = $("#clearBtn"); b.textContent = "Clear Cart"; b.dataset.armed = ""; }
+$("#clearBtn").addEventListener("click", () => {
+  const b = $("#clearBtn");
+  if (b.dataset.armed) { cart = []; saveCart(); renderCart(false); toast("Cart cleared"); return; }
+  b.dataset.armed = "1";
+  b.textContent = "Tap again to clear everything";
+  clearTimer = setTimeout(resetClear, 3500);
+});
+
+/* ---------- cart drawer ---------- */
+const drawer = $("#order");
+const backdrop = $("#backdrop");
+let lastFocus = null;
+function openCart() {
+  lastFocus = document.activeElement;
+  drawer.inert = false;
+  drawer.classList.add("open");
+  backdrop.classList.add("open");
+  document.body.style.overflow = "hidden";
+  $("#cartBtn").setAttribute("aria-expanded", "true");
+  $("#closeCart").focus();
+}
+function closeCart() {
+  drawer.classList.remove("open");
+  drawer.inert = true;
+  backdrop.classList.remove("open");
+  document.body.style.overflow = "";
+  $("#cartBtn").setAttribute("aria-expanded", "false");
+  (lastFocus || $("#cartBtn")).focus();
+}
+$("#cartBtn").addEventListener("click", openCart);
+$("#closeCart").addEventListener("click", closeCart);
+backdrop.addEventListener("click", closeCart);
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && $("#nameGate").hidden && drawer.classList.contains("open")) closeCart();
+});
+
+/* ---------- name prompt ---------- */
+const PAGE_PARTS = ["header.top", ".hero", ".awning", "main", "footer"];
+function setPageInert(on) { PAGE_PARTS.forEach(s => { const el = $(s); if (el) el.inert = on; }); }
+let gateEditing = false;
+function openGate(editing) {
+  gateEditing = editing;
+  const input = $("#nameInput");
+  input.value = customerName;
+  $("#nameErr").hidden = true;
+  $("#nameCancel").hidden = !(editing && customerName);
+  $("#nameGate").hidden = false;
+  setPageInert(true);
+  drawer.inert = true;
+  input.focus();
+  input.select();
+}
+function closeGate() {
+  $("#nameGate").hidden = true;
+  setPageInert(false);
+  drawer.inert = !drawer.classList.contains("open");
+}
+$("#nameForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const n = cleanName($("#nameInput").value);
+  if (!n) { $("#nameErr").hidden = false; $("#nameInput").focus(); return; }
+  customerName = n;
+  saveName();
+  closeGate();
+  renderCart(false);
+  toast(gateEditing ? "Name updated" : "Welcome, " + n + "!", gateEditing ? "" : "Pick your snacks from the menu.");
+  if (gateEditing && drawer.classList.contains("open")) $("#changeName").focus();
+});
+$("#nameCancel").addEventListener("click", () => {
+  closeGate();
+  if (drawer.classList.contains("open")) $("#changeName").focus();
+});
+$("#changeName").addEventListener("click", () => openGate(true));
+
+renderMenu();
+renderCart(false);
+openGate(false);   // ask for the name as soon as the page opens
+</script>
